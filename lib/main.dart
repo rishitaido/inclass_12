@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/animation.dart';
 
 void main() {
   runApp(const MyApp());
@@ -27,7 +28,10 @@ class _SignupPageState extends State<SignupPage> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  
+  final TextEditingController _confirmPassword = TextEditingController();
+
+  String _selectedEmoji = '😊'; 
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -46,6 +50,41 @@ class _SignupPageState extends State<SignupPage> {
                 'Create Your Account',
                 style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               ),
+              const SizedBox(height: 20),
+              
+              const Text(
+                'Select an Emoji: ',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 10),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  for(String emoji in ['😊', '🚀', '🎉', '⭐', '🎨'])
+                    GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _selectedEmoji = emoji;
+                        });
+                      },
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 8),
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: _selectedEmoji == emoji ? Colors.purple : Colors.green,
+                            width: _selectedEmoji == emoji ? 3: 1, 
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          emoji,
+                          style: const TextStyle(fontSize: 32),
+                        ),
+                      ),
+                    )
+                ],
+              ),    
               const SizedBox(height: 20),
               // Name Field
               TextFormField(
@@ -102,15 +141,34 @@ class _SignupPageState extends State<SignupPage> {
                 },
               ),
               const SizedBox(height: 24),
+              TextFormField(
+                controller: _confirmPassword,
+                obscureText: true,
+                decoration: const InputDecoration(
+                  labelText: 'Confirm Password',
+                  prefixIcon: Icon(Icons.lock),
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter a password';
+                  }
+                  if (value != _passwordController.text) {
+                    return 'Password must be the same';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 24),
               // Sign Up Button
               ElevatedButton(
                 onPressed: () {
                   if (_formKey.currentState!.validate()) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Welcome! Account created successfully.'),
-                        backgroundColor: Colors.green,
-                      ),
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => WelcomePage(userName: _nameController.text, userEmoji: _selectedEmoji),
+                      )
                     );
                   }
                 },
@@ -124,6 +182,75 @@ class _SignupPageState extends State<SignupPage> {
                 ),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class WelcomePage extends StatefulWidget{
+  final String userName; 
+  final String userEmoji;
+
+  const WelcomePage({super.key, required this.userName, required this.userEmoji});
+  @override 
+  State<WelcomePage> createState() => _WelcomePageState();
+
+}
+
+
+class _WelcomePageState extends State<WelcomePage> with TickerProviderStateMixin {
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(seconds: 3),
+      vsync: this,
+    );
+
+    _fadeAnimation = Tween<double>(begin: 0, end: 1).animate(_animationController);
+    _scaleAnimation = Tween<double>(begin: 0.5, end: 1).animate(_animationController);
+
+    _animationController.forward();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Welcome!'),
+        backgroundColor: Colors.amber,
+      ),
+      body: Center(
+        child: FadeTransition(
+          opacity: _fadeAnimation,
+          child: ScaleTransition(
+            scale: _scaleAnimation,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  widget.userEmoji,
+                  style: const TextStyle(fontSize: 70),
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  'Welcome, ${widget.userName}!',
+                  style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.black),
+                ),
+              ],
+            ),
           ),
         ),
       ),
